@@ -11,8 +11,8 @@ try{
   source=source.split('for(let x=0;x<W;x+=2){const ix=Math.floor(wx)').join('for(let x=0;x<W;x+=4){const ix=Math.floor(wx)');
   source=source.split('vctx.fillRect(x,y,2,1);wx+=sx*2;wy+=sy*2').join('vctx.fillRect(x,y,4,2);wx+=sx*4;wy+=sy*4');
 
-  // Precomputed Level 0 carpet lookup, generated once per runtime instead of expensive per-pixel trig soup.
-  const carpetInject=`const CARPET_TEX=new Float32Array(64*64);for(let yy=0;yy<64;yy++)for(let xx=0;xx<64;xx++){let n=0;let h=((xx*374761393)^(yy*668265263)^0x5f3759df)>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;n=(h&1023)/1023;const fiber=((xx+yy*3)%7===0?-.035:0)+((xx*5+yy)%11===0?.025:0);const weave=((xx&1)?-.012:.012)+((yy&1)?.008:-.008);const stain=((h>>>12)%97===0?-.11:0);CARPET_TEX[yy*64+xx]=.965+(n-.5)*.06+fiber+weave+stain;}\n`;
+  // Precomputed Level 0 carpet lookup. Keep the injected newline escaped because this lands inside v17's generated string.
+  const carpetInject='const CARPET_TEX=new Float32Array(64*64);for(let yy=0;yy<64;yy++)for(let xx=0;xx<64;xx++){let n=0;let h=((xx*374761393)^(yy*668265263)^0x5f3759df)>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;n=(h&1023)/1023;const fiber=((xx+yy*3)%7===0?-.035:0)+((xx*5+yy)%11===0?.025:0);const weave=((xx&1)?-.012:.012)+((yy&1)?.008:-.008);const stain=((h>>>12)%97===0?-.11:0);CARPET_TEX[yy*64+xx]=.965+(n-.5)*.06+fiber+weave+stain;}\\n  ';
   source=source.split('replaceFn(\\"drawPlanePattern\\",`function drawPlanePattern').join(carpetInject+'replaceFn(\\"drawPlanePattern\\",`function drawPlanePattern');
 
   // Replace the Level 0 carpet formula with tile sampling + broad wear, so it reads like fabric instead of ceramic tiles.
