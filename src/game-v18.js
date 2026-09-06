@@ -6,6 +6,18 @@ try{
   let source=await fetch(new URL("./game-v17.js",import.meta.url)).then(r=>{if(!r.ok)throw new Error("game-v17.js failed: "+r.status);return r.text()});
   source=source.replace('new URL("./game-v13.js",import.meta.url)','new URL("./src/game-v13.js",location.href)');
 
+  // Main exits are guaranteed, but now their room centers are snapped to an already-open
+  // part of the native level generation with an open cell just outside the transition apron.
+  source=source.replace(/function transitions\(l\)\{const a=\[\];if\(l<10\)\{const s=hash\(701,911,500,l\).*?return a\}/,
+`function transitions(l){
+ const a=[];
+ const baseWall=(x,y)=>{const t=LEVELS[l].type;let w=false;if(t==="yellow"||t==="hotel"||t==="darkness")w=roomCell(x,y);else if(t==="office")w=officeCell(x,y);else if(t==="pipes"||t==="electrical")w=pipeCell(x,y);else if(t==="concrete"||t==="ocean")w=concreteCell(x,y);else if(t==="caves")w=caveCell(x,y);else if(t==="suburb")w=suburbCell(x,y);else if(t==="fields")w=fieldCell(x,y);return !!w};
+ const attach=(seedX,seedY,seedS,target,back)=>{const s=hash(seedX,seedY,seedS,l),ang=(s%24)*Math.PI/12+(back?Math.PI/24:0),dist=(back?66:62)+((s>>>(back?6:5))%(back?31:29)),bx=Math.round(Math.cos(ang)*dist),by=Math.round(Math.sin(ang)*dist);let best=null;for(let r=0;r<=18&&!best;r++)for(let oy=-r;oy<=r&&!best;oy++)for(let ox=-r;ox<=r;ox++){if(r&&Math.abs(ox)!==r&&Math.abs(oy)!==r)continue;const x=bx+ox,y=by+oy;if(baseWall(x,y))continue;const linked=(!baseWall(x+5,y))||(!baseWall(x-5,y))||(!baseWall(x,y+5))||(!baseWall(x,y-5));if(linked){best={cx:x,cy:y,target,main:true};break}}return best||{cx:bx,cy:by,target,main:true}};
+ if(l<10)a.push(attach(701,911,500,l+1,false));
+ if(l>0)a.push(attach(-877,613,501,l-1,true));
+ for(let gy=-7;gy<=7;gy++)for(let gx=-7;gx<=7;gx++){if(Math.abs(gx)+Math.abs(gy)<3)continue;const h=hash(gx,gy,540,l);if(h%1000>=10)continue;const cx=gx*29+((h>>>8)%13)-6,cy=gy*29+((h>>>12)%13)-6;if(Math.hypot(cx-2.5,cy-2.5)<52)continue;const dir=((h>>>18)%4===0)?-1:1,target=l+dir;if(target<0||target>10)continue;let close=false;for(const q of a)if(Math.hypot(q.cx-cx,q.cy-cy)<22){close=true;break}if(!close)a.push({cx,cy,target,main:false});if(a.length>=8)return a}
+ return a}`);
+
   source=source.split('for(let y=0;y<H;y++){const delta=Math.abs(y-horizon);').join('for(let y=0;y<H;y+=2){const delta=Math.abs(y-horizon);');
   source=source.split('for(let x=0;x<W;x+=2){const ix=Math.floor(wx)').join('for(let x=0;x<W;x+=4){const ix=Math.floor(wx)');
   source=source.split('vctx.fillRect(x,y,2,1);wx+=sx*2;wy+=sy*2').join('vctx.fillRect(x,y,4,2);wx+=sx*4;wy+=sy*4');
