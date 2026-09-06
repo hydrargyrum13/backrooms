@@ -36,7 +36,7 @@ try{
 
   mustReplace(
 `function proj(wx,wy,wz){const dx=wx-player.x,dz=wz-player.y,s=Math.sin(player.angle),c=Math.cos(player.angle),rx=dx*s-dz*c,rz=dx*c+dz*s;if(rz<=.05)return null;const k=H/rz;return{sx:W/2+rx*k,sy:H/2-wy*k,rz}}`,
-`function proj(wx,wy,wz){const dx=wx-player.x,dz=wz-player.y,c=Math.cos(player.angle),s=Math.sin(player.angle),forward=dx*c+dz*s;if(forward<=.05)return null;const right=-dx*s+dz*c,k=H/forward;return{sx:W/2+right*k,sy:H/2+(0.5-wy)*k,rz:forward}}`,
+`function proj(wx,wy,wz){const dx=wx-player.x,dz=wz-player.y,dist=Math.hypot(dx,dz);let rel=Math.atan2(dz,dx)-player.angle;while(rel>Math.PI)rel-=Math.PI*2;while(rel<-Math.PI)rel+=Math.PI*2;const forward=dist*Math.cos(rel);if(forward<=.05)return null;const k=H/forward;return{sx:W/2+(rel/player.fov)*W,sy:H/2+(0.5-wy)*k,rz:forward}}`,
 "projection patch"
   );
 
