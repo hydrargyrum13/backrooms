@@ -11,11 +11,20 @@ try{
     return r.text();
   });
 
-  // v13 must stay in real module context. Point its v9 fetch at the real site path
-  // before importing the patched source as a Blob module.
+  // v13 runs as a real module Blob, so make every nested source URL absolute to the page.
   source=source.replace(
     'new URL("./game-v9.js",import.meta.url)',
     'new URL("./src/game-v9.js",location.href)'
+  );
+  source=source.replace(
+    'source=source.replace(\'new URL("./game-v3.js",import.meta.url)\',`new URL("./game-v3.js",${JSON.stringify(import.meta.url)})`);',
+    'source=source.replace(\'new URL("./game-v3.js",import.meta.url)\',\'new URL("./src/game-v3.js",location.href)\');'
+  );
+
+  // v13 used AsyncFunction for the v9 runtime. That source is module code, so import it as a module instead.
+  source=source.replace(
+    'const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;\nawait new AsyncFunction(source)();',
+    'const runtimeBlob=new Blob([source],{type:"text/javascript"});const runtimeUrl=URL.createObjectURL(runtimeBlob);try{await import(runtimeUrl)}finally{URL.revokeObjectURL(runtimeUrl)}'
   );
 
   // Equal horizontal / vertical mouse sensitivity.
@@ -66,7 +75,6 @@ try{
   );
 
   // Subtle destination ceiling color shift when approaching the forward exit.
-  // It is deliberately weaker than the general proximity cue.
   source=source.replace(
     'drawPlanePattern(lv,horizon);if(level===0||level===4)',
     'drawPlanePattern(lv,horizon);if(level<10){let exitD=1e9,exitT=null;for(const rr of transitions(level)){if(rr.target!==level+1)continue;const dd=Math.hypot(rr.cx+.5-player.x,rr.cy+.5-player.y);if(dd<exitD){exitD=dd;exitT=rr}}if(exitT&&exitD<48){const k=1-exitD/48,pulse=.75+.25*Math.sin(time*.004),hh=Math.max(0,Math.min(H,horizon));vctx.save();vctx.globalAlpha=k*.09*pulse;vctx.fillStyle=LEVELS[exitT.target].ceil[1]||LEVELS[exitT.target].ceil[0];vctx.fillRect(0,0,W,hh);vctx.restore()}}if(level===0||level===4)'
