@@ -35,8 +35,14 @@ try{
   );
 
   mustReplace(
+`let level=0,titleTimer=0,transitionCooldown=0;const player={x:2.5,y:2.5,angle:0,fov:Math.PI/3,speed:2.65,radius:.18},keys={},zBuffer=new Float32Array(W),state=new Map();`,
+`let level=0,titleTimer=0,transitionCooldown=0;const player={x:2.5,y:2.5,angle:0,pitch:0,fov:Math.PI/3,speed:2.65,radius:.18},keys={},zBuffer=new Float32Array(W),state=new Map();`,
+"player pitch patch"
+  );
+
+  mustReplace(
 `function proj(wx,wy,wz){const dx=wx-player.x,dz=wz-player.y,s=Math.sin(player.angle),c=Math.cos(player.angle),rx=dx*s-dz*c,rz=dx*c+dz*s;if(rz<=.05)return null;const k=H/rz;return{sx:W/2+rx*k,sy:H/2-wy*k,rz}}`,
-`function proj(wx,wy,wz){const dx=wx-player.x,dz=wz-player.y,dist=Math.hypot(dx,dz);let rel=Math.atan2(dz,dx)-player.angle;while(rel>Math.PI)rel-=Math.PI*2;while(rel<-Math.PI)rel+=Math.PI*2;const forward=dist*Math.cos(rel);if(forward<=.05)return null;const k=H/forward;return{sx:W/2+(rel/player.fov)*W,sy:H/2+(0.5-wy)*k,rz:forward}}`,
+`function proj(wx,wy,wz){const dx=wx-player.x,dz=wz-player.y,dist=Math.hypot(dx,dz);let rel=Math.atan2(dz,dx)-player.angle;while(rel>Math.PI)rel-=Math.PI*2;while(rel<-Math.PI)rel+=Math.PI*2;const forward=dist*Math.cos(rel);if(forward<=.05)return null;const k=H/forward,horizon=H/2+player.pitch*H;return{sx:W/2+(rel/player.fov)*W,sy:horizon+(0.5-wy)*k,rz:forward}}`,
 "projection patch"
   );
 
@@ -44,6 +50,24 @@ try{
 `const tr=(x,z)=>({x:o.x+x*cy-z*sy,z:o.z+x*sy+z*cy})`,
 `const tr=(x,z)=>({x:o.x+z*cy-x*sy,z:o.z+z*sy+x*cy})`,
 "model yaw patch"
+  );
+
+  mustReplace(
+`function drawSprite(wx,wy,type){const sp=SPRITES[type];if(!sp)return;const dx=wx-player.x,dy=wy-player.y,dist=Math.hypot(dx,dy);let a=Math.atan2(dy,dx)-player.angle;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(Math.abs(a)>player.fov*.65||dist<.1)return;const cd=dist*Math.cos(a),tot=Math.max(8,Math.floor((H/cd)*.36)),pxs=Math.max(1,Math.floor(tot/8)),sx=Math.floor(W/2+(a/(player.fov/2))*(W/2)),L=sx-pxs*4,T=Math.floor(H/2+tot*.14-pxs*8);for(let yy=0;yy<8;yy++)for(let xx=0;xx<8;xx++){const code=sp[yy][xx];if(code==="0")continue;const px=L+xx*pxs;if(px<0||px>=W||cd>zBuffer[px])continue;vctx.fillStyle=SC[code];vctx.fillRect(px,T+yy*pxs,pxs,pxs)}}`,
+`function drawSprite(wx,wy,type){const sp=SPRITES[type];if(!sp)return;const dx=wx-player.x,dy=wy-player.y,dist=Math.hypot(dx,dy);let a=Math.atan2(dy,dx)-player.angle;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;if(Math.abs(a)>player.fov*.65||dist<.1)return;const cd=dist*Math.cos(a),tot=Math.max(8,Math.floor((H/cd)*.36)),pxs=Math.max(1,Math.floor(tot/8)),sx=Math.floor(W/2+(a/(player.fov/2))*(W/2)),L=sx-pxs*4,horizon=H/2+player.pitch*H,T=Math.floor(horizon+tot*.14-pxs*8);for(let yy=0;yy<8;yy++)for(let xx=0;xx<8;xx++){const code=sp[yy][xx];if(code==="0")continue;const px=L+xx*pxs;if(px<0||px>=W||cd>zBuffer[px])continue;vctx.fillStyle=SC[code];vctx.fillRect(px,T+yy*pxs,pxs,pxs)}}`,
+"item pitch patch"
+  );
+
+  mustReplace(
+`function renderWorld(time){const lv=LEVELS[level],cg=vctx.createLinearGradient(0,0,0,H/2);cg.addColorStop(0,lv.ceil[0]);cg.addColorStop(1,lv.ceil[1]);vctx.fillStyle=cg;vctx.fillRect(0,0,W,H/2);const fg=vctx.createLinearGradient(0,H/2,0,H);fg.addColorStop(0,lv.floor[0]);fg.addColorStop(1,lv.floor[1]);vctx.fillStyle=fg;vctx.fillRect(0,H/2,W,H/2);if(level===0||level===4){const f=.08+Math.sin(time*.013)*.012;for(let x=10;x<W;x+=30){vctx.fillStyle=\`rgba(255,255,220,${f})\`;vctx.fillRect(x,7,11,2)}}for(let x=0;x<W;x++){const cam=x/W-.5,a=player.angle+cam*player.fov,hit=cast(a),d=Math.max(.001,hit.dist*Math.cos(a-player.angle));zBuffer[x]=d;const wh=Math.min(H*3,Math.floor(H/d)),top=Math.floor((H-wh)/2),base=wallColor(hit.mx,hit.my);let tex=.92+Math.sin(hit.wallX*27)*.035;if(lv.type==="caves")tex=.72+rnd(hit.mx,hit.my,170)*.24;if(lv.type==="hotel")tex=.85+(Math.floor(hit.wallX*12)%3===0?.11:0);if(lv.type==="concrete")tex=.82+rnd(hit.mx,hit.my,171)*.18;let fog=Math.max(.12,Math.min(1,1.5/(d*.20+1)));if(lv.type==="darkness"){const c=Math.abs(x/W-.5);fog*=inv.flashlightOn?Math.max(.07,1-c*2.35):.045}else if(inv.flashlightOn){const c=Math.abs(x/W-.5);fog*=Math.min(1.25,1.02+Math.max(0,.22-c*.65))}vctx.fillStyle=sh(base,tex*fog*(hit.side===0?1:.82));vctx.fillRect(x,top,1,wh)}renderStuff();if(lv.type==="darkness"&&!inv.flashlightOn){vctx.fillStyle="rgba(0,0,0,.94)";vctx.fillRect(0,0,W,H)}else if(lv.type==="darkness"&&inv.flashlightOn){const g=vctx.createRadialGradient(W/2,H/2,4,W/2,H/2,90);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.42,"rgba(0,0,0,.24)");g.addColorStop(1,"rgba(0,0,0,.94)");vctx.fillStyle=g;vctx.fillRect(0,0,W,H)}}`,
+`function renderWorld(time){const lv=LEVELS[level],horizon=Math.max(-H,Math.min(H*2,H/2+player.pitch*H)),cg=vctx.createLinearGradient(0,0,0,Math.max(1,horizon));cg.addColorStop(0,lv.ceil[0]);cg.addColorStop(1,lv.ceil[1]);vctx.fillStyle=cg;vctx.fillRect(0,0,W,Math.max(0,horizon));const fg=vctx.createLinearGradient(0,Math.min(H-1,Math.max(0,horizon)),0,H);fg.addColorStop(0,lv.floor[0]);fg.addColorStop(1,lv.floor[1]);vctx.fillStyle=fg;vctx.fillRect(0,Math.max(0,horizon),W,H-Math.max(0,horizon));if(level===0||level===4){const f=.08+Math.sin(time*.013)*.012;for(let x=10;x<W;x+=30){vctx.fillStyle=\`rgba(255,255,220,${f})\`;vctx.fillRect(x,7+player.pitch*H,11,2)}}for(let x=0;x<W;x++){const cam=x/W-.5,a=player.angle+cam*player.fov,hit=cast(a),d=Math.max(.001,hit.dist*Math.cos(a-player.angle));zBuffer[x]=d;const wh=Math.min(H*3,Math.floor(H/d)),top=Math.floor(horizon-wh/2),base=wallColor(hit.mx,hit.my);let tex=.92+Math.sin(hit.wallX*27)*.035;if(lv.type==="caves")tex=.72+rnd(hit.mx,hit.my,170)*.24;if(lv.type==="hotel")tex=.85+(Math.floor(hit.wallX*12)%3===0?.11:0);if(lv.type==="concrete")tex=.82+rnd(hit.mx,hit.my,171)*.18;let fog=Math.max(.12,Math.min(1,1.5/(d*.20+1)));if(lv.type==="darkness"){const c=Math.abs(x/W-.5);fog*=inv.flashlightOn?Math.max(.07,1-c*2.35):.045}else if(inv.flashlightOn){const c=Math.abs(x/W-.5);fog*=Math.min(1.25,1.02+Math.max(0,.22-c*.65))}vctx.fillStyle=sh(base,tex*fog*(hit.side===0?1:.82));vctx.fillRect(x,top,1,wh)}renderStuff();if(lv.type==="darkness"&&!inv.flashlightOn){vctx.fillStyle="rgba(0,0,0,.94)";vctx.fillRect(0,0,W,H)}else if(lv.type==="darkness"&&inv.flashlightOn){const g=vctx.createRadialGradient(W/2,horizon,4,W/2,horizon,90);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.42,"rgba(0,0,0,.24)");g.addColorStop(1,"rgba(0,0,0,.94)");vctx.fillStyle=g;vctx.fillRect(0,0,W,H)}}`,
+"world pitch patch"
+  );
+
+  mustReplace(
+`document.addEventListener("mousemove",e=>{if(document.pointerLockElement===canvas)player.angle+=e.movementX*.0025});requestAnimationFrame(loop);`,
+`document.addEventListener("mousemove",e=>{if(document.pointerLockElement===canvas){player.angle+=e.movementX*.0025;player.pitch=Math.max(-.48,Math.min(.48,player.pitch+e.movementY*.0017))}});requestAnimationFrame(loop);`,
+"mouse pitch patch"
   );
 
   mustReplace(
