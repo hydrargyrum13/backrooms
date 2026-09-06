@@ -11,7 +11,7 @@ try{
     return r.text();
   });
 
-  // v13 runs as a real module Blob, so make every nested source URL absolute to the page.
+  // Make nested runtime paths absolute before v13 is imported from a blob URL.
   source=source.replace(
     'new URL("./game-v9.js",import.meta.url)',
     'new URL("./src/game-v9.js",location.href)'
@@ -21,10 +21,10 @@ try{
     'source=source.replace(\'new URL("./game-v3.js",import.meta.url)\',\'new URL("./src/game-v3.js",location.href)\');'
   );
 
-  // v13 used AsyncFunction for the v9 runtime. That source is module code, so import it as a module instead.
-  source=source.replace(
-    'const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;\nawait new AsyncFunction(source)();',
-    'const runtimeBlob=new Blob([source],{type:"text/javascript"});const runtimeUrl=URL.createObjectURL(runtimeBlob);try{await import(runtimeUrl)}finally{URL.revokeObjectURL(runtimeUrl)}'
+  // Robustly replace v13's nested AsyncFunction execution. Matching only the actual
+  // invocation avoids whitespace/newline differences that broke the previous patch.
+  source=source.split('await new AsyncFunction(source)();').join(
+    'const __runtimeBlob=new Blob([source],{type:"text/javascript"});const __runtimeUrl=URL.createObjectURL(__runtimeBlob);try{await import(__runtimeUrl)}finally{URL.revokeObjectURL(__runtimeUrl)}'
   );
 
   // Equal horizontal / vertical mouse sensitivity.
