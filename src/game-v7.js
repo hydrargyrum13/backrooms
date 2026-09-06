@@ -61,8 +61,14 @@ try{
 
   rep(
     'document.addEventListener("mousemove",e=>{if(document.pointerLockElement===canvas)player.angle+=e.movementX*.0025});requestAnimationFrame(loop);',
-    'document.addEventListener("mousemove",e=>{if(document.pointerLockElement===canvas){player.angle+=e.movementX*.0025;player.pitch=Math.max(-.48,Math.min(.48,player.pitch+e.movementY*.0017))}});requestAnimationFrame(loop);',
+    'document.addEventListener("mousemove",e=>{if(document.pointerLockElement===canvas){player.angle+=e.movementX*.0025;player.pitch=Math.max(-.48,Math.min(.48,player.pitch-e.movementY*.0017))}});requestAnimationFrame(loop);',
     'mouse pitch patch'
+  );
+
+  rep(
+    'const rad=Math.min(14,5+inv.lidarLevel*2),cs=8,size=rad*2+1,ox=10,oy=42;',
+    'const rad=Math.min(14,5+inv.lidarLevel*2),cs=10,size=rad*2+1,ox=10,oy=42;',
+    'lidar display size patch'
   );
 
   rep(
