@@ -1,7 +1,8 @@
 "use strict";
 
 // v5 patches v3 directly with corrected prop transforms plus v4 transition rules.
-const source = await fetch("./game-v3.js").then(r => {
+const runtimeUrl = new URL("./game-v3.js", import.meta.url);
+const source = await fetch(runtimeUrl).then(r => {
   if (!r.ok) throw new Error(`game-v3.js yüklenemedi: ${r.status}`);
   return r.text();
 });
@@ -52,7 +53,6 @@ patched = patched.replace(
 );
 
 // Match the prop projection exactly to the raycaster's angular screen convention.
-// Raycaster: angle to the player's left -> smaller screen X, right -> larger screen X.
 patched = patched.replace(
   /function proj\(wx,wy,wz\)\{.*?\}/s,
   `function proj(wx,wy,wz){
@@ -66,9 +66,7 @@ patched = patched.replace(
   }`
 );
 
-// Replace model local->world yaw transform with the same basis as player heading:
-// local +X is model-right, local +Z is model-forward.
-// At yaw 0 forward is +world X; at yaw PI/2 forward is +world Y.
+// local +X = model-right, local +Z = model-forward.
 patched = patched.replace(
   /const tr=\(x,z\)=>\(\{x:o\.x\+x\*cy-z\*sy,z:o\.z\+x\*sy\+z\*cy\}\)/,
   `const tr=(x,z)=>({x:o.x+z*cy-x*sy,z:o.z+z*sy+x*cy})`
