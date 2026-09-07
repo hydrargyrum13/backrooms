@@ -22,12 +22,9 @@ try{
   source=source.split('for(let x=0;x<W;x+=2){const ix=Math.floor(wx)').join('for(let x=0;x<W;x+=4){const ix=Math.floor(wx)');
   source=source.split('vctx.fillRect(x,y,2,1);wx+=sx*2;wy+=sy*2').join('vctx.fillRect(x,y,4,2);wx+=sx*4;wy+=sy*4');
 
-  const carpetRuntimeInject='patched=patched.replace(\\"function drawPlanePattern(\\",\\"const CARPET_TEX=new Float32Array(64*64);for(let yy=0;yy<64;yy++)for(let xx=0;xx<64;xx++){let h=((xx*374761393)^(yy*668265263)^0x5f3759df)>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;const n=(h&1023)/1023,fiber=((xx+yy*3)%7===0?-.035:0)+((xx*5+yy)%11===0?.025:0),weave=((xx&1)?-.012:.012)+((yy&1)?.008:-.008),stain=((h>>>12)%97===0?-.11:0);CARPET_TEX[yy*64+xx]=.965+(n-.5)*.06+fiber+weave+stain;}function drawPlanePattern(\\");\\n  ';
-  source=source.split('replaceFn(\\"drawPlanePattern\\",`function drawPlanePattern').join(carpetRuntimeInject+'replaceFn(\\"drawPlanePattern\\",`function drawPlanePattern');
-
   source=source.replace(
     'if(t===\\"yellow\\")f=macro*(.975+.022*Math.sin(wx*2.1+Math.sin(wy*.55))+.015*Math.sin(wy*4.6)+.012*Math.sin((wx+wy)*7.8))*(rnd(Math.floor(wx/5),Math.floor(wy/5),881)<.06?.93:1);',
-    'if(t===\\"yellow\\"){const tx=((Math.floor(wx*13)%64)+64)%64,ty=((Math.floor(wy*13)%64)+64)%64,cloth=CARPET_TEX[ty*64+tx],wear=.975+.025*Math.sin(wx*.12+wy*.08),track=(Math.abs((((wx+wy*.22)%9)+9)%9-4.5)<.65?.965:1);f=cloth*wear*track*(rnd(Math.floor(wx/6),Math.floor(wy/6),881)<.045?.94:1)}'
+    'if(t===\\"yellow\\"){const tx=((Math.floor(wx*13)%64)+64)%64,ty=((Math.floor(wy*13)%64)+64)%64;let hh=((tx*374761393)^(ty*668265263)^0x5f3759df)>>>0;hh=Math.imul(hh^(hh>>>13),1274126177)>>>0;const n=(hh&1023)/1023,fiber=((tx+ty*3)%7===0?-.035:0)+((tx*5+ty)%11===0?.025:0),weave=((tx&1)?-.012:.012)+((ty&1)?.008:-.008),stain=((hh>>>12)%97===0?-.11:0),cloth=.965+(n-.5)*.06+fiber+weave+stain,wear=.975+.025*Math.sin(wx*.12+wy*.08),track=(Math.abs((((wx+wy*.22)%9)+9)%9-4.5)<.65?.965:1);f=cloth*wear*track*(rnd(Math.floor(wx/6),Math.floor(wy/6),881)<.045?.94:1)}'
   );
 
   source=source.replace(
