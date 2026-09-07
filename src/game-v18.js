@@ -10,6 +10,14 @@ try{
     return r.text();
   });
 
+  // v17 normally resolves game-v13 relative to its own module URL. Because v18
+  // executes the optimized v17 source from a blob URL, import.meta.url becomes
+  // blob:... and relative URL construction fails. Anchor it to the page instead.
+  source=source.replace(
+    'new URL("./game-v13.js",import.meta.url)',
+    'new URL("./src/game-v13.js",location.href)'
+  );
+
   // Floor/ceiling is the expensive part: render it at 4x2 pixel blocks instead
   // of evaluating every other pixel on every scanline.
   source=source.split('for(let y=0;y<H;y++){const delta=Math.abs(y-horizon);').join('for(let y=0;y<H;y+=2){const delta=Math.abs(y-horizon);');
